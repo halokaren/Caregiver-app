@@ -1,0 +1,40 @@
+import type { CareDemand } from "@/types/care";
+
+export const mockCareDemands: CareDemand[] = [
+  {
+    id: "1",
+    gender: "female",
+    age: 78,
+    relationship: "母亲",
+    description: "老人行动不便，需要协助日常起居、服药提醒、简单康复训练。有轻度认知障碍，需耐心沟通。",
+    salary: 6500,
+    schedule: "周一至周五 8:00-18:00，周末可协商",
+    location: "北京市朝阳区望京",
+    publishedAt: "2025-02-10",
+    publisherName: "张女士",
+  },
+  {
+    id: "2",
+    gender: "male",
+    age: 85,
+    relationship: "父亲",
+    description: "术后康复期，需要协助翻身、如厕、饮食。希望护理员有护理或康复相关经验。",
+    salary: 8000,
+    schedule: "全天住家，每月休息 4 天",
+    location: "上海市浦东新区陆家嘴",
+    publishedAt: "2025-02-09",
+    publisherName: "李先生",
+  },
+  {
+    id: "3",
+    gender: "female",
+    age: 92,
+    relationship: "祖母",
+    description: "高龄老人，生活基本能自理，主要需要陪伴、做饭、打扫及就医陪同。",
+    salary: 5500,
+    schedule: "工作日 9:00-17:00",
+    location: "广州市天河区",
+    publishedAt: "2025-02-08",
+    publisherName: "王先生",
+  },
+];
