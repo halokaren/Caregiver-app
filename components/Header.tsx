@@ -36,7 +36,7 @@ export function Header() {
             发布需求
           </Link>
           <Link
-            href="/auth"
+            href="/login"
             className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 font-medium transition-colors"
           >
             <User className="h-4 w-4" />
@@ -73,7 +73,7 @@ export function Header() {
             发布需求
           </Link>
           <Link
-            href="/auth"
+            href="/login"
             className="py-2 flex items-center gap-2 text-slate-600 font-medium"
             onClick={() => setMenuOpen(false)}
           >

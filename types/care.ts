@@ -34,3 +34,15 @@ export interface CareDemandForm {
   schedule: string;
   location: string;
 }
+
+/** Supabase demands 表行（与 DB 一致） */
+export interface DemandRow {
+  id: string;
+  title: string;
+  description: string;
+  salary: number;
+  location: string;
+  publisher_name: string | null;
+  patient_current_rating: number | null;
+  created_at: string;
+}
