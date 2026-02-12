@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CareDemandForm } from "@/types/care";
 import { FileText } from "lucide-react";
+import { supabase, supabaseUrl } from "@/lib/supabase";
 
-const initialForm: CareDemandForm = {
+const initialForm: CareDemandForm & { title: string } = {
+  title: "",
   gender: "female",
   age: 0,
   relationship: "",
@@ -17,27 +19,56 @@ const initialForm: CareDemandForm = {
 
 export default function PublishPage() {
   const router = useRouter();
-  const [form, setForm] = useState<CareDemandForm>(initialForm);
+  const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const update = (field: keyof CareDemandForm, value: string | number) => {
+  const update = (
+    field: keyof (CareDemandForm & { title: string }),
+    value: string | number
+  ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    // 预留：调用 API 提交需求
-    await new Promise((r) => setTimeout(r, 800));
-    setSubmitting(false);
-    router.push("/");
+    setError(null);
+
+    try {
+      console.log("Supabase连接信息:", supabaseUrl || "(未配置)");
+      const { error: insertError } = await supabase.from("demands").insert({
+        title: form.title.trim(),
+        description: form.description.trim(),
+        salary: Number(form.salary),
+        location: form.location.trim(),
+        publisher_name: form.relationship.trim() || null,
+      });
+
+      if (insertError) {
+        const msg = insertError.message;
+        setError(msg);
+        window.alert(msg);
+        setSubmitting(false);
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "发布失败，请重试";
+      setError(msg);
+      window.alert(msg);
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl flex items-center gap-2">
-          <FileText className="h-8 w-8 text-primary-500" />
+          <FileText className="h-8 w-8 text-blue-600" />
           发布护理需求
         </h1>
         <p className="mt-1 text-slate-600">
@@ -49,7 +80,27 @@ export default function PublishPage() {
         onSubmit={handleSubmit}
         className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
       >
+        {error && (
+          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-6">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              需求标题
+            </label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => update("title", e.target.value)}
+              placeholder="例如：望京老人日间照护"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+              required
+            />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -60,7 +111,7 @@ export default function PublishPage() {
                 onChange={(e) =>
                   update("gender", e.target.value as CareDemandForm["gender"])
                 }
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
                 required
               >
                 <option value="female">女</option>
@@ -79,7 +130,7 @@ export default function PublishPage() {
                 value={form.age || ""}
                 onChange={(e) => update("age", Number(e.target.value) || 0)}
                 placeholder="例如 75"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
                 required
               />
             </div>
@@ -93,9 +144,8 @@ export default function PublishPage() {
               type="text"
               value={form.relationship}
               onChange={(e) => update("relationship", e.target.value)}
-              placeholder="例如：母亲、父亲、祖父"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
-              required
+              placeholder="例如：母亲、父亲、祖父（将显示为发布者）"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
             />
           </div>
 
@@ -108,7 +158,7 @@ export default function PublishPage() {
               onChange={(e) => update("description", e.target.value)}
               placeholder="请描述健康状况、日常需要协助的内容、特殊注意事项等"
               rows={4}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition resize-y"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition resize-y"
               required
             />
           </div>
@@ -124,7 +174,7 @@ export default function PublishPage() {
                 value={form.salary || ""}
                 onChange={(e) => update("salary", Number(e.target.value) || 0)}
                 placeholder="例如 6000"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
                 required
               />
             </div>
@@ -137,8 +187,7 @@ export default function PublishPage() {
                 value={form.schedule}
                 onChange={(e) => update("schedule", e.target.value)}
                 placeholder="例如：周一至周五 8:00-18:00"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
-                required
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
               />
             </div>
           </div>
@@ -152,7 +201,7 @@ export default function PublishPage() {
               value={form.location}
               onChange={(e) => update("location", e.target.value)}
               placeholder="例如：北京市朝阳区望京"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
               required
             />
           </div>
@@ -169,7 +218,7 @@ export default function PublishPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-lg bg-primary-600 px-4 py-2.5 font-medium text-white hover:bg-primary-700 disabled:opacity-60 transition-colors"
+            className="rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {submitting ? "提交中…" : "发布需求"}
           </button>
